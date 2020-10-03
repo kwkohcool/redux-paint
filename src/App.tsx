@@ -1,15 +1,15 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { beginStroke, endStroke, updateStroke } from './actions';
-import { strokesSelector } from './modules/strokes/selectors';
-import { historyIndexSelector } from './modules/historyIndex/selectors';
-import { FilePanel } from './shared/FilePanel';
+import { EditPanel } from './shared/EditPanel';
+import { drawStroke, clearCanvas, setCanvasSize } from './utils/canvasUtils';
+import { beginStroke, updateStroke } from './modules/currentStroke/slice';
+import { endStroke } from './modules/sharedActions';
 import { useCanvas } from './CanvasContext';
 import { ColorPanel } from './shared/ColorPanel';
-import { RootState } from './utils/types';
+import { FilePanel } from './shared/FilePanel';
 import { currentStrokeSelector } from './modules/currentStroke/selectors';
-import { drawStroke, clearCanvas, setCanvasSize } from './utils/canvasUtils';
-import { EditPanel } from './shared/EditPanel';
+import { strokesSelector } from './modules/strokes/selectors';
+import { historyIndexSelector } from './modules/historyIndex/selectors';
 
 const WIDTH = 1024;
 const HEIGHT = 768;
@@ -17,18 +17,11 @@ const HEIGHT = 768;
 function App() {
     const dispatch = useDispatch();
     const canvasRef = useCanvas();
-    const isDrawing = useSelector<RootState>(
-        (state) => !!state.currentStroke.points.length
-    );
-    const historyIndex = useSelector<RootState, RootState['historyIndex']>(
-        historyIndexSelector
-    );
-    const strokes = useSelector<RootState, RootState['strokes']>(
-        strokesSelector
-    );
-    const currentStroke = useSelector<RootState, RootState['currentStroke']>(
-        currentStrokeSelector
-    );
+    const historyIndex = useSelector(historyIndexSelector);
+    const strokes = useSelector(strokesSelector);
+    const currentStroke = useSelector(currentStrokeSelector);
+    const isDrawing = !!currentStroke.points.length;
+
     const getCanvasWithContext = (canvas = canvasRef.current) => {
         return { canvas, context: canvas?.getContext('2d') };
     };
@@ -50,21 +43,6 @@ function App() {
         );
     }, [currentStroke]);
 
-    const endDrawing = () => {
-        if (isDrawing) {
-            dispatch(endStroke({ historyIndex, stroke: currentStroke }));
-        }
-    };
-
-    const draw = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
-        if (!isDrawing) {
-            return;
-        }
-        const { offsetX, offsetY } = nativeEvent;
-
-        dispatch(updateStroke({ x: offsetX, y: offsetY }));
-    };
-
     useEffect(() => {
         const { canvas, context } = getCanvasWithContext();
         if (!context || !canvas) {
@@ -79,7 +57,22 @@ function App() {
                     drawStroke(context, stroke.points, stroke.color);
                 });
         });
-    }, [historyIndex]);
+    }, [historyIndex, strokes]);
+
+    const endDrawing = () => {
+        if (isDrawing) {
+            dispatch(endStroke({ stroke: currentStroke, historyIndex }));
+        }
+    };
+
+    const draw = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
+        if (!isDrawing) {
+            return;
+        }
+        const { offsetX, offsetY } = nativeEvent;
+
+        dispatch(updateStroke({ x: offsetX, y: offsetY }));
+    };
 
     useEffect(() => {
         const { canvas, context } = getCanvasWithContext();
@@ -105,9 +98,9 @@ function App() {
                     <button aria-label="Close" />
                 </div>
             </div>
+            <ColorPanel />
             <EditPanel />
             <FilePanel />
-            <ColorPanel />
             <canvas
                 onMouseDown={startDrawing}
                 onMouseUp={endDrawing}
