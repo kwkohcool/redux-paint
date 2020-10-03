@@ -1,15 +1,15 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { beginStroke, updateStroke, endStroke } from './actions';
-import { drawStroke, clearCanvas, setCanvasSize } from './canvasUtils';
-import { ColorPanel } from './shared/ColorPanel';
-import { EditPanel } from './shared/EditPanel';
-import { RootState } from './types';
-import { currentStrokeSelector } from './modules/currentStroke/selectors';
+import { beginStroke, endStroke, updateStroke } from './actions';
 import { strokesSelector } from './modules/strokes/selectors';
 import { historyIndexSelector } from './modules/historyIndex/selectors';
-import { useCanvas } from './CanvasContext';
 import { FilePanel } from './shared/FilePanel';
+import { useCanvas } from './CanvasContext';
+import { ColorPanel } from './shared/ColorPanel';
+import { RootState } from './utils/types';
+import { currentStrokeSelector } from './modules/currentStroke/selectors';
+import { drawStroke, clearCanvas, setCanvasSize } from './utils/canvasUtils';
+import { EditPanel } from './shared/EditPanel';
 
 const WIDTH = 1024;
 const HEIGHT = 768;
@@ -20,7 +20,6 @@ function App() {
     const isDrawing = useSelector<RootState>(
         (state) => !!state.currentStroke.points.length
     );
-
     const historyIndex = useSelector<RootState, RootState['historyIndex']>(
         historyIndexSelector
     );
@@ -30,7 +29,6 @@ function App() {
     const currentStroke = useSelector<RootState, RootState['currentStroke']>(
         currentStrokeSelector
     );
-
     const getCanvasWithContext = (canvas = canvasRef.current) => {
         return { canvas, context: canvas?.getContext('2d') };
     };
@@ -39,7 +37,7 @@ function App() {
         nativeEvent,
     }: React.MouseEvent<HTMLCanvasElement>) => {
         const { offsetX, offsetY } = nativeEvent;
-        dispatch(beginStroke(offsetX, offsetY));
+        dispatch(beginStroke({ x: offsetX, y: offsetY }));
     };
 
     useEffect(() => {
@@ -54,7 +52,7 @@ function App() {
 
     const endDrawing = () => {
         if (isDrawing) {
-            dispatch(endStroke(historyIndex, currentStroke));
+            dispatch(endStroke({ historyIndex, stroke: currentStroke }));
         }
     };
 
@@ -63,7 +61,8 @@ function App() {
             return;
         }
         const { offsetX, offsetY } = nativeEvent;
-        dispatch(updateStroke(offsetX, offsetY));
+
+        dispatch(updateStroke({ x: offsetX, y: offsetY }));
     };
 
     useEffect(() => {
@@ -107,8 +106,8 @@ function App() {
                 </div>
             </div>
             <EditPanel />
-            <ColorPanel />
             <FilePanel />
+            <ColorPanel />
             <canvas
                 onMouseDown={startDrawing}
                 onMouseUp={endDrawing}
