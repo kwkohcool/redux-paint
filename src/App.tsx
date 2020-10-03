@@ -2,7 +2,8 @@ import React, { useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { currentStrokeSelector } from './selectors';
 import { beginStroke, updateStroke, endStroke } from './actions';
-import { drawStroke } from './canvasUtils';
+import { drawStroke, clearCanvas, setCanvasSize } from './canvasUtils';
+import { ColorPanel } from './ColorPanel';
 
 const WIDTH = 1024;
 const HEIGHT = 768;
@@ -48,6 +49,22 @@ function App() {
         dispatch(updateStroke(offsetX, offsetY));
     };
 
+    useEffect(() => {
+        const { canvas, context } = getCanvasWithContext();
+        if (!canvas || !context) {
+            return;
+        }
+
+        setCanvasSize(canvas, WIDTH, HEIGHT);
+
+        context.lineJoin = 'round';
+        context.lineCap = 'round';
+        context.lineWidth = 5;
+        context.strokeStyle = 'black';
+
+        clearCanvas(canvas);
+    }, []);
+
     return (
         <div className="window">
             <div className="title-bar">
@@ -56,6 +73,7 @@ function App() {
                     <button aria-label="Close" />
                 </div>
             </div>
+            <ColorPanel />
             <canvas
                 onMouseDown={startDrawing}
                 onMouseUp={endDrawing}
