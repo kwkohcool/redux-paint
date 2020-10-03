@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDispatch } from 'react-redux';
-import { setStrokeColor } from './actions';
+import { setStrokeColor } from '../actions';
 
 const COLORS = [
     '#000000',
